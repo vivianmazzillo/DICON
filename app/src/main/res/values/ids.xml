@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="destape" type="id" />
+    <item name="txtPrecio" type="id" />
+    <item name="txtTitulo" type="id" />
+    <item name="titulo1" type="id" />
+</resources>
