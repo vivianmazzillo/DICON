@@ -7,9 +7,15 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.firebase.ui.database.FirebaseRecyclerAdapter;
+import com.firebase.ui.database.FirebaseRecyclerOptions;
+import com.firebase.ui.database.SnapshotParser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -22,55 +28,85 @@ import java.util.ArrayList;
 
 public class CategoriaPlomeria extends AppCompatActivity {
 
-    private TextView mprecio1, mtitulo1;
-    private DatabaseReference mDatabase;
-    private RecyclerView recyclerView;
-    Adapter adapter;
-    ArrayList<String> items;
+    private RecyclerView serviciosplomeria;
+    private DatabaseReference categoriasRef, electricosRef;
+    FirebaseRecyclerAdapter adapter;
 
+    @Override
+    protected void onStart() {
+        super.onStart();
+        adapter.startListening();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        adapter.stopListening();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_categoria_plomeria);
+        categoriasRef = FirebaseDatabase.getInstance().getReference().child("Categorías");
 
-        recyclerView = findViewById(R.id.recyclerview);
-        items = new ArrayList<>();
-        items.add("Precio");
-        items.add("Precio");
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new Adapter(this,items);
-        recyclerView.setAdapter(adapter);
+        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
+        linearLayoutManager.setReverseLayout(true);
+        linearLayoutManager.setStackFromEnd(true);
 
+        serviciosplomeria = (RecyclerView) findViewById(R.id.recyclerview);
+        serviciosplomeria.setHasFixedSize(true);
+        serviciosplomeria.setLayoutManager(linearLayoutManager);
 
-        mprecio1  = (TextView) findViewById(R.id.precio1);
-        mtitulo1 = (TextView) findViewById(R.id.titulo1);
-        mDatabase = FirebaseDatabase.getInstance().getReference();
-
-        mDatabase.child("Categorías").addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                if (dataSnapshot.exists()){
-
-                    String Precio = dataSnapshot.child("Precio").getValue().toString();
-                    String Nombre = dataSnapshot.child("Nombre").getValue().toString();
-                    mprecio1.setText("" + Precio);
-                    mtitulo1.setText(""+ Nombre);
-                }
-
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-
-            }
-        });
-
+        displayAllCategorias();
     }
+
+
+    public void displayAllCategorias() {
+
+        FirebaseRecyclerOptions<Categorias> options =
+                new FirebaseRecyclerOptions.Builder<Categorias>()
+                        .setQuery(categoriasRef.child("Plomería"), new SnapshotParser<Categorias>() {
+                            @NonNull
+                            @Override
+                            public Categorias parseSnapshot(@NonNull DataSnapshot snapshot) {
+                                return new Categorias(snapshot.child("Nombre").getValue().toString(),
+                                        snapshot.child("Precio").getValue().toString());
+                            }
+                        })
+                        .build();
+
+        adapter = new FirebaseRecyclerAdapter<Categorias, CategoriaElectricos.CategoriasViewHolder>(options) {
+
+            @Override
+            protected void onBindViewHolder (@NonNull final CategoriaElectricos.CategoriasViewHolder holder,
+                                             int position, @NonNull Categorias model){
+                holder.setName(model.getNombre());
+                holder.setPrecio(model.getPrecio());
+            };
+
+            @NonNull
+            @Override
+            public CategoriaElectricos.CategoriasViewHolder onCreateViewHolder (@NonNull ViewGroup parent,
+                                                                                int viewType){
+                View view = LayoutInflater.from(parent.getContext())
+                        .inflate(R.layout.all_categorias_display_layout, parent, false);
+
+                return new CategoriaElectricos.CategoriasViewHolder(view);
+            }
+
+        };
+
+        serviciosplomeria.setAdapter(adapter);
+    }
+
 
     public void menuprincipal(View view){
         startActivity(new Intent(this,MenuActivity.class));
         finish();
+    }
+
+    public void ordenarProducto(View v) {
+        Toast.makeText(v.getContext(),"Su orden fue tomada con exito",Toast.LENGTH_LONG).show();
     }
 }
